@@ -165,15 +165,55 @@ if(id==="worksheet")worksheet();
 }
 
 /* STUDY */
-function study(){
-let h="<h2>Lernmodus</h2>";
-for(const v in VERBS){
-h+=`<h3>${v}</h3><table><tr>`;
-PERSONS.forEach(p=>h+=`<th>${p.l}</th>`);h+="</tr><tr>";
-PERSONS.forEach(p=>h+=`<td>${conj({v,modus:"indikativ",tempus:"praesens",genus:"aktiv",p:p.p,n:p.n})}</td>`);
-h+="</tr></table>";
-}
-document.getElementById("study").innerHTML=h;
+function study() {
+  const tenses = [
+    { label: "Praesens Aktiv", tempus: "praesens", modus: "indikativ", genus: "aktiv" },
+    { label: "Imperfekt Aktiv", tempus: "imperfekt", modus: "indikativ", genus: "aktiv" },
+    { label: "Futur I Aktiv", tempus: "futur1", modus: "indikativ", genus: "aktiv" },
+    { label: "Perfekt Aktiv", tempus: "perfekt", modus: "indikativ", genus: "aktiv" },
+    { label: "Plusquamperfekt Aktiv", tempus: "plusquamperfekt", modus: "indikativ", genus: "aktiv" },
+    { label: "Futur II Aktiv", tempus: "futur2", modus: "indikativ", genus: "aktiv" },
+
+    { label: "Praesens Passiv", tempus: "praesens", modus: "indikativ", genus: "passiv" },
+    { label: "Imperfekt Passiv", tempus: "imperfekt", modus: "indikativ", genus: "passiv" },
+
+    { label: "Konjunktiv Praesens", tempus: "praesens", modus: "konjunktiv", genus: "aktiv" },
+    { label: "Konjunktiv Imperfekt", tempus: "imperfekt", modus: "konjunktiv", genus: "aktiv" }
+  ];
+
+  let html = "<h2>Lernmodus – nach Tempus</h2>";
+
+  for (const v in VERBS) {
+    html += `<h3>${v}</h3>`;
+
+    for (const t of tenses) {
+      html += `<h4>${t.label}</h4>`;
+      html += "<table><tr>";
+
+      PERSONS.forEach(p => {
+        html += `<th>${p.l}</th>`;
+      });
+
+      html += "</tr><tr>";
+
+      PERSONS.forEach(p => {
+        const form = conj({
+          v,
+          modus: t.modus,
+          tempus: t.tempus,
+          genus: t.genus,
+          p: p.p,
+          n: p.n
+        });
+        html += `<td>${form}</td>`;
+      });
+
+      html += "</tr></table><br>";
+    }
+  }
+
+  document.getElementById("study").innerHTML = html;
+
 }
 
 /* WRITE */
