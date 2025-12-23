@@ -25,11 +25,6 @@ th,td { border:1px solid #999; padding:4px; text-align:center; }
 <h1>Lateinischer Verbtrainer</h1>
 
 <nav>
-<select id="difficulty">
-<option value="easy">Leicht</option>
-<option value="medium">Mittel</option>
-<option value="hard">Schwer</option>
-</select><br>
 <button onclick="show('study')">📘 Lernen</button>
 <button onclick="show('write')">✍️ Schreiben</button>
 <button onclick="show('analyze')">🔍 Analysieren</button>
@@ -219,56 +214,169 @@ function study() {
 /* WRITE */
 let current=null;
 function write(){
-const d=diff();
-const v=d.verbs[Math.random()*d.verbs.length|0];
-const tempus=d.t[Math.random()*d.t.length|0];
-const modus=d.m[Math.random()*d.m.length|0];
-const genus=d.g[Math.random()*d.g.length|0];
-const p=PERSONS[Math.random()*6|0];
-current=conj({v,modus,tempus,genus,p:p.p,n:p.n});
-document.getElementById("write").innerHTML=
-`<h2>Schreibmodus</h2>
-<p>${v} – ${modus} – ${tempus} – ${genus} – ${p.l}</p>
-<input id="ans"><button onclick="check()">Prüfen</button><p id="fb"></p>`;
+  const container = document.getElementById("write");
+
+  container.innerHTML = `
+    <h2>Schreibmodus</h2>
+    <label>
+      Schwierigkeit:
+      <select id="writeDiff">
+        <option value="easy">Leicht</option>
+        <option value="medium">Mittel</option>
+        <option value="hard">Schwer</option>
+      </select>
+    </label>
+    <div id="writeTask"></div>
+  `;
+
+  generateWriteTask();
+
 }
-function check(){
-const ok=document.getElementById("ans").value.trim()===current;
-record(ok);
-document.getElementById("fb").innerHTML=ok?`<span class="correct">✔️ Richtig</span>`:`<span class="wrong">❌ ${current}</span>`;
+
+let currentAnswer = "";
+
+function generateWriteTask(){
+  const level = document.getElementById("writeDiff").value;
+  const d = DIFFICULTY[level];
+
+  const v = d.verbs[Math.random() * d.verbs.length | 0];
+  const tempus = d.t[Math.random() * d.t.length | 0];
+  const modus = d.m[Math.random() * d.m.length | 0];
+  const genus = d.g[Math.random() * d.g.length | 0];
+  const p = PERSONS[Math.random() * 6 | 0];
+
+  currentAnswer = conj({
+    v, modus, tempus, genus,
+    p: p.p, n: p.n
+  });
+
+  document.getElementById("writeTask").innerHTML = `
+    <p>
+      <b>${v}</b> – ${modus} – ${tempus} – ${genus} – ${p.l}
+    </p>
+    <input id="userAnswer">
+    <button id="checkBtn">Prüfen</button>
+    <button id="nextBtn">Neu</button>
+    <p id="feedback"></p>
+  `;
+
+  document.getElementById("checkBtn").onclick = () => {
+    const user = document.getElementById("userAnswer").value.trim();
+    const ok = user === currentAnswer;
+    record(ok);
+    document.getElementById("feedback").innerHTML =
+      ok
+        ? `<span class="correct">✔️ Richtig</span>`
+        : `<span class="wrong">❌ ${currentAnswer}</span>`;
+  };
+
+  document.getElementById("nextBtn").onclick = generateWriteTask; }
+
+  
+function newWriteTask(){
+  const level=document.getElementById("writeDiff").value;
+  const d=DIFFICULTY[level];
+  const v=d.verbs[Math.random()*d.verbs.length|0];
+  const tempus=d.t[Math.random()*d.t.length|0];
+  const modus=d.m[Math.random()*d.m.length|0];
+  const genus=d.g[Math.random()*d.g.length|0];
+  const p=PERSONS[Math.random()*6|0];
+  current=conj({v,modus,tempus,genus,p:p.p,n:p.n});
+
+  document.getElementById("writeTask").innerHTML = `
+    <p><b>${v}</b> – ${modus} – ${tempus} – ${genus} – ${p.l}</p>
+    <input id="ans">
+    <button onclick="check()">Prüfen</button>
+    <button onclick="newWriteTask()">Neu</button>
+    <p id="fb"></p>
+  `;
 }
 
 /* ANALYZE */
 let solution=null;
 function analyze(){
-const v="legere";
-const p=PERSONS[Math.random()*6|0];
-solution=p.l;
-const f=conj({v,modus:"indikativ",tempus:"perfekt",genus:"aktiv",p:p.p,n:p.n});
-document.getElementById("analyze").innerHTML=
-`<h2>Analysemodus</h2>
-<p><b>${f}</b></p>
-<select id="sel">${PERSONS.map(x=>`<option>${x.l}</option>`).join("")}</select>
-<button onclick="chk()">Prüfen</button><p id="af"></p>`;
+  const container = document.getElementById("analyze");
+
+  container.innerHTML = `
+    <h2>Analysemodus</h2>
+    <label>
+      Schwierigkeit:
+      <select id="anDiff">
+        <option value="easy">Leicht</option>
+        <option value="medium">Mittel</option>
+        <option value="hard">Schwer</option>
+      </select>
+    </label>
+    <div id="anTask"></div>
+  `;
+
+  generateAnalyzeTask();
 }
-function chk(){
-const ok=document.getElementById("sel").value===solution;
-record(ok);
-document.getElementById("af").innerHTML=ok?`<span class="correct">✔️</span>`:`<span class="wrong">❌</span>`;
+
+function generateAnalyzeTask(){
+  const level = document.getElementById("anDiff").value;
+  const d = DIFFICULTY[level];
+
+  const v = d.verbs[Math.random() * d.verbs.length | 0];
+  const tempus = d.t[Math.random() * d.t.length | 0];
+  const modus = d.m[Math.random() * d.m.length | 0];
+  const genus = d.g[Math.random() * d.g.length | 0];
+  const p = PERSONS[Math.random() * 6 | 0];
+
+  const form = conj({
+    v, modus, tempus, genus,
+    p: p.p, n: p.n
+  });
+
+  const solution = `${v} – ${modus} – ${tempus} – ${genus} – ${p.l}`;
+
+  document.getElementById("anTask").innerHTML = `
+    <p><b>${form}</b></p>
+    <button id="showSolution">Lösung anzeigen</button>
+    <button id="nextAnalyze">Neu</button>
+  `;
+
+  document.getElementById("showSolution").onclick = () => {
+    alert(solution);
+  };
+
+  document.getElementById("nextAnalyze").onclick = generateAnalyzeTask; }
+
+  
+function newAnalyzeTask(){
+  const level=document.getElementById("anDiff").value;
+  const d=DIFFICULTY[level];
+  const v=d.verbs[Math.random()*d.verbs.length|0];
+  const tempus=d.t[Math.random()*d.t.length|0];
+  const modus=d.m[Math.random()*d.m.length|0];
+  const genus=d.g[Math.random()*d.g.length|0];
+  const p=PERSONS[Math.random()*6|0];
+  const form=conj({v,modus,tempus,genus,p:p.p,n:p.n});
+  solution=`${v} – ${modus} – ${tempus} – ${genus} – ${p.l}`;
+
+  document.getElementById("anTask").innerHTML = `
+    <p><b>${form}</b></p>
+    <p>Was ist die Form?</p>
+    <button onclick="alert(solution)">Lösung anzeigen</button>
+    <button onclick="newAnalyzeTask()">Neu</button>
+  `;
 }
 
 /* WORKSHEET */
 function worksheet(){
-document.getElementById("worksheet").innerHTML=
-`<h2>Arbeitsblatt</h2><button onclick="genWS()">Erzeugen</button><div id="ws"></div>`;
-}
-function genWS(){
-let out="<ol>";
-for(let i=0;i<10;i++){
-const p=PERSONS[Math.random()*6|0];
-out+=`<li>amare (${p.l} Praesens Aktiv): _______</li>`;
-}
-out+="</ol><button onclick='window.print()'>🖨️ Drucken</button>";
-document.getElementById("ws").innerHTML=out;
+  document.getElementById("worksheet").innerHTML = `
+    <h2>Arbeitsblatt</h2>
+    <label>Schwierigkeit:
+      <select id="wsDiff">
+        <option value="easy">Leicht</option>
+        <option value="medium">Mittel</option>
+        <option value="hard">Schwer</option>
+      </select>
+    </label>
+    <button onclick="genWS()">Erzeugen</button>
+    <div id="ws"></div>
+  `;
+
 }
 
 /* INIT */
