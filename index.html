@@ -1,440 +1,533 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<title>Lateinischer Verbtrainer</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#2c3e50">
-
-<style>
-body { font-family: Arial, sans-serif; background:#f2f2f2; margin:0; padding:10px; }
-h1 { text-align:center; font-size:1.4em; }
-nav { text-align:center; margin-bottom:10px; }
-button, select, input { padding:6px; margin:3px; font-size:1em; }
-section { display:none; background:#fff; padding:10px; border-radius:6px; }
-table { border-collapse:collapse; width:100%; font-size:0.9em; }
-th,td { border:1px solid #999; padding:4px; text-align:center; }
-.correct { color:green; }
-.wrong { color:red; }
-#stats { background:#fff; padding:8px; border-radius:6px; margin-bottom:8px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lateinischer Verbtrainer</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f2f2f2; margin:0; padding:12px; }
+    h1 { text-align:center; font-size:1.4em; margin:10px 0 12px; }
+    nav { text-align:center; margin-bottom:10px; }
+    button, select, input { padding:8px; margin:4px; font-size:1em; }
+    section { display:none; background:#fff; padding:12px; border-radius:8px; }
+    table { border-collapse:collapse; width:100%; margin:8px 0 14px; }
+    th, td { border:1px solid #999; padding:6px; text-align:center; }
+    .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .card { background:#fff; padding:10px; border-radius:8px; margin:10px 0; }
+    .correct { color: #0a7a1f; font-weight:700; }
+    .wrong { color: #b00020; font-weight:700; }
+    h2 { margin-top:0; }
+    h3 { margin:18px 0 6px; }
+    h4 { margin:10px 0 6px; }
+    .muted { color:#555; font-size:0.95em; }
+  </style>
 </head>
 
 <body>
+  <h1>Lateinischer Verbtrainer</h1>
 
-<h1>Lateinischer Verbtrainer</h1>
+  <nav class="card">
+    <button onclick="show('study')">📘 Lernmodus</button>
+    <button onclick="show('write')">✍️ Schreibmodus</button>
+    <button onclick="show('analyze')">🔍 Analysemodus</button>
+    <button onclick="show('worksheet')">📝 Arbeitsblatt</button>
+    <div class="muted">Hinweis: Ohne Längenzeichen (keine Makrons).</div>
+  </nav>
 
-<nav>
-<button onclick="show('study')">📘 Lernen</button>
-<button onclick="show('write')">✍️ Schreiben</button>
-<button onclick="show('analyze')">🔍 Analysieren</button>
-<button onclick="show('worksheet')">📝 Arbeitsblatt</button>
-</nav>
-
-<div id="stats"></div>
-
-<section id="study"></section>
-<section id="write"></section>
-<section id="analyze"></section>
-<section id="worksheet"></section>
+  <section id="study"></section>
+  <section id="write"></section>
+  <section id="analyze"></section>
+  <section id="worksheet"></section>
 
 <script>
-
-function resetProgress(){
-  const p = { t: 0, c: 0, s: 0 };
-  saveP(p);
-  renderStats();
-}
-
-  
-/* ================= PERSONS ================= */
-const PERSONS=[
-{p:1,n:"sg",l:"1. Sg."},{p:2,n:"sg",l:"2. Sg."},{p:3,n:"sg",l:"3. Sg."},
-{p:1,n:"pl",l:"1. Pl."},{p:2,n:"pl",l:"2. Pl."},{p:3,n:"pl",l:"3. Pl."}
+/* =========================
+   DATA: Persons, Verbs
+========================= */
+const PERSONS = [
+  { p: 1, n: "sg", l: "1. Sg." },
+  { p: 2, n: "sg", l: "2. Sg." },
+  { p: 3, n: "sg", l: "3. Sg." },
+  { p: 1, n: "pl", l: "1. Pl." },
+  { p: 2, n: "pl", l: "2. Pl." },
+  { p: 3, n: "pl", l: "3. Pl." }
 ];
-const idx=(p,n)=>PERSONS.findIndex(x=>x.p===p&&x.n===n);
+function pIndex(p, n) {
+  return PERSONS.findIndex(x => x.p === p && x.n === n);
+}
 
-/* ================= ENDINGS ================= */
-const END={
-presA:["o","s","t","mus","tis","nt"],
-presP:["or","ris","tur","mur","mini","ntur"],
-impfA:["bam","bas","bat","bamus","batis","bant"],
-impfP:["bar","baris","batur","bamur","bamini","bantur"],
-perfA:["i","isti","it","imus","istis","erunt"],
-plqA:["eram","eras","erat","eramus","eratis","erant"],
-fut2A:["ero","eris","erit","erimus","eritis","erunt"],
-konjPresA:["em","es","et","emus","etis","ent"],
-konjImpA:["rem","res","ret","remus","retis","rent"]
+const END = {
+  presA: ["o","s","t","mus","tis","nt"],
+  presP: ["or","ris","tur","mur","mini","ntur"],
+  impfA: ["bam","bas","bat","bamus","batis","bant"],
+  impfP: ["bar","baris","batur","bamur","bamini","bantur"],
+  perfA: ["i","isti","it","imus","istis","erunt"],
+  plqA:  ["eram","eras","erat","eramus","eratis","erant"],
+  fut2A: ["ero","eris","erit","erimus","eritis","erunt"],
+  // school-Latin (simplified) conjunctive active (regular verbs):
+  konjPresA: ["em","es","et","emus","etis","ent"],
+  konjImpA:  ["rem","res","ret","remus","retis","rent"]
 };
 
-const FUT={
-1:["bo","bis","bit","bimus","bitis","bunt"],
-2:["bo","bis","bit","bimus","bitis","bunt"],
-3:["am","es","et","emus","etis","ent"],
-"3io":["iam","ies","iet","iemus","ietis","ient"],
-4:["iam","ies","iet","iemus","ietis","ient"]
+const FUT = {
+  1: ["bo","bis","bit","bimus","bitis","bunt"],
+  2: ["bo","bis","bit","bimus","bitis","bunt"],
+  3: ["am","es","et","emus","etis","ent"],
+  "3io": ["iam","ies","iet","iemus","ietis","ient"],
+  4: ["iam","ies","iet","iemus","ietis","ient"]
 };
 
-/* ================= VERBS ================= */
-const VERBS={
-amare:{c:1,p:"ama",pf:"amav"},
-monere:{c:2,p:"mone",pf:"monu"},
-legere:{c:3,p:"lege",pf:"leg"},
-capere:{c:"3io",p:"cape",pf:"cep"},
-audire:{c:4,p:"audi",pf:"audiv"},
+const VERBS = {
+  amare:  { c: 1,    p: "ama",  pf: "amav" },
+  monere: { c: 2,    p: "mone", pf: "monu" },
+  legere: { c: 3,    p: "lege", pf: "leg"  },
+  capere: { c: "3io",p: "cape", pf: "cep"  },
+  audire: { c: 4,    p: "audi", pf: "audiv" },
 
-esse:{irr:true,
-pres:["sum","es","est","sumus","estis","sunt"],
-impf:["eram","eras","erat","eramus","eratis","erant"],
-fut:["ero","eris","erit","erimus","eritis","erunt"],
-perf:["fui","fuisti","fuit","fuimus","fuistis","fuerunt"],
-plq:["fueram","fueras","fuerat","fueramus","fueratis","fuerant"]
-},
+  esse: {
+    irr: true,
+    pres: ["sum","es","est","sumus","estis","sunt"],
+    impf: ["eram","eras","erat","eramus","eratis","erant"],
+    fut:  ["ero","eris","erit","erimus","eritis","erunt"],
+    perf: ["fui","fuisti","fuit","fuimus","fuistis","fuerunt"],
+    plq:  ["fueram","fueras","fuerat","fueramus","fueratis","fuerant"]
+  },
 
-ire:{irr:true,
-pres:["eo","is","it","imus","itis","eunt"],
-impf:["ibam","ibas","ibat","ibamus","ibatis","ibant"],
-fut:["ibo","ibis","ibit","ibimus","ibitis","ibunt"],
-perf:["ii","isti","iit","iimus","istis","ierunt"],
-plq:["ieram","ieras","ierat","ieramus","ieratis","ierant"]
-},
+  ire: {
+    irr: true,
+    pres: ["eo","is","it","imus","itis","eunt"],
+    impf: ["ibam","ibas","ibat","ibamus","ibatis","ibant"],
+    fut:  ["ibo","ibis","ibit","ibimus","ibitis","ibunt"],
+    perf: ["ii","isti","iit","iimus","istis","ierunt"],
+    plq:  ["ieram","ieras","ierat","ieramus","ieratis","ierant"]
+  },
 
-ferre:{irr:true,
-pres:["fero","fers","fert","ferimus","fertis","ferunt"],
-impf:["ferebam","ferebas","ferebat","ferebamus","ferebatis","ferebant"],
-fut:["feram","feres","feret","feremus","feretis","ferent"],
-perf:["tuli","tulisti","tulit","tulimus","tulistis","tulerunt"],
-plq:["tuleram","tuleras","tulerat","tuleramus","tuleratis","tulerant"]
-}
+  ferre: {
+    irr: true,
+    pres: ["fero","fers","fert","ferimus","fertis","ferunt"],
+    impf: ["ferebam","ferebas","ferebat","ferebamus","ferebatis","ferebant"],
+    fut:  ["feram","feres","feret","feremus","feretis","ferent"],
+    perf: ["tuli","tulisti","tulit","tulimus","tulistis","tulerunt"],
+    plq:  ["tuleram","tuleras","tulerat","tuleramus","tuleratis","tulerant"]
+  }
 };
 
-/* ================= CONJUGATION ================= */
-function conj({v,modus,tempus,genus,p,n}){
-const i=idx(p,n),V=VERBS[v];
-if(V.irr){
-if(tempus==="praesens")return V.pres[i];
-if(tempus==="imperfekt")return V.impf[i];
-if(tempus==="futur1")return V.fut[i];
-if(tempus==="perfekt")return V.perf[i];
-if(tempus==="plusquamperfekt")return V.plq[i];
-}
-if(modus==="konjunktiv"){
-if(tempus==="praesens")return V.p+END.konjPresA[i];
-if(tempus==="imperfekt")return V.p+"re"+END.konjImpA[i];
-}
-if(genus==="aktiv"){
-if(tempus==="praesens")return V.p+END.presA[i];
-if(tempus==="imperfekt")return V.p+END.impfA[i];
-if(tempus==="futur1")return V.p+FUT[V.c][i];
-if(tempus==="perfekt")return V.pf+END.perfA[i];
-if(tempus==="plusquamperfekt")return V.pf+END.plqA[i];
-if(tempus==="futur2")return V.pf+END.fut2A[i];
-}
-if(genus==="passiv"){
-if(tempus==="praesens")return V.p+END.presP[i];
-if(tempus==="imperfekt")return V.p+END.impfP[i];
-}
-return "—";
-}
-
-/* ================= DIFFICULTY ================= */
-const DIFFICULTY={
-easy:{verbs:["amare","monere","audire"],t:["praesens","imperfekt"],m:["indikativ"],g:["aktiv"]},
-medium:{verbs:["amare","monere","legere","capere","audire","esse"],t:["praesens","imperfekt","futur1","perfekt"],m:["indikativ"],g:["aktiv","passiv"]},
-hard:{verbs:Object.keys(VERBS),t:["praesens","imperfekt","futur1","perfekt","plusquamperfekt","futur2"],m:["indikativ","konjunktiv"],g:["aktiv","passiv"]}
+/* =========================
+   DIFFICULTY (per mode)
+========================= */
+const DIFFICULTY = {
+  easy: {
+    verbs: ["amare","monere","audire"],
+    modi: ["indikativ"],
+    tenses: ["praesens","imperfekt"],
+    voices: ["aktiv"]
+  },
+  medium: {
+    verbs: ["amare","monere","legere","capere","audire","esse"],
+    modi: ["indikativ"],
+    tenses: ["praesens","imperfekt","futur1","perfekt","plusquamperfekt"],
+    voices: ["aktiv","passiv"]
+  },
+  hard: {
+    verbs: Object.keys(VERBS),
+    modi: ["indikativ","konjunktiv"],
+    tenses: ["praesens","imperfekt","futur1","perfekt","plusquamperfekt","futur2"],
+    voices: ["aktiv","passiv"]
+  }
 };
-const diff=()=>DIFFICULTY[document.getElementById("difficulty").value];
 
-/* ================= PROGRESS ================= */
-function loadP(){return JSON.parse(localStorage.getItem("latinP"))||{t:0,c:0,s:0}}
-function saveP(p){localStorage.setItem("latinP",JSON.stringify(p))}
-function record(ok){
-const p=loadP();p.t++;if(ok)p.c++;p.s=ok?p.s+1:0;saveP(p);renderStats();
-}
-function renderStats(){
-const p=loadP();
-document.getElementById("stats").innerHTML=
-`📊 ${p.c}/${p.t} richtig (${p.t?Math.round(p.c/p.t*100):0}%) – Serie: ${p.s}`;
+const LABELS = {
+  modus: { indikativ: "Indikativ", konjunktiv: "Konjunktiv" },
+  tempus: {
+    praesens: "Praesens",
+    imperfekt: "Imperfekt",
+    futur1: "Futur I",
+    perfekt: "Perfekt",
+    plusquamperfekt: "Plusquamperfekt",
+    futur2: "Futur II"
+  },
+  genus: { aktiv: "Aktiv", passiv: "Passiv" }
+};
+
+function rand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+/* =========================
+   CONJUGATION
+   (school-Latin scope; no macrons)
+========================= */
+function conj({ v, modus, tempus, genus, p, n }) {
+  const i = pIndex(p, n);
+  const V = VERBS[v];
+
+  // Irregulars: support indicative; (no passive for irregulars here)
+  if (V.irr) {
+    if (genus === "passiv") return "—";
+    if (modus === "konjunktiv") return "—"; // keep it school-simple; can be added later
+    if (tempus === "praesens") return V.pres[i];
+    if (tempus === "imperfekt") return V.impf[i];
+    if (tempus === "futur1") return V.fut[i];
+    if (tempus === "perfekt") return V.perf[i];
+    if (tempus === "plusquamperfekt") return V.plq[i];
+    if (tempus === "futur2") return "—";
+    return "—";
+  }
+
+  // Regular verbs: Konjunktiv (simplified, active only)
+  if (modus === "konjunktiv") {
+    if (genus === "passiv") return "—";
+    if (tempus === "praesens") return V.p + END.konjPresA[i];
+    if (tempus === "imperfekt") return V.p + "re" + END.konjImpA[i];
+    // school extension points:
+    return "—";
+  }
+
+  // Regular verbs: Indikativ
+  if (genus === "aktiv") {
+    if (tempus === "praesens") return V.p + END.presA[i];
+    if (tempus === "imperfekt") return V.p + END.impfA[i];
+    if (tempus === "futur1") return V.p + FUT[V.c][i];
+    if (tempus === "perfekt") return V.pf + END.perfA[i];
+    if (tempus === "plusquamperfekt") return V.pf + END.plqA[i];
+    if (tempus === "futur2") return V.pf + END.fut2A[i];
+    return "—";
+  }
+
+  // Regular verbs: Passiv (school common: praesens + imperfekt)
+  if (genus === "passiv") {
+    if (tempus === "praesens") return V.p + END.presP[i];
+    if (tempus === "imperfekt") return V.p + END.impfP[i];
+    return "—";
+  }
+
+  return "—";
 }
 
-/* ================= UI ================= */
+/* =========================
+   ROUTER
+========================= */
 function show(id){
-  document.querySelectorAll("section").forEach(s=>s.style.display="none");
-  document.getElementById(id).style.display="block";
+  document.querySelectorAll("section").forEach(s => s.style.display = "none");
+  const el = document.getElementById(id);
+  el.style.display = "block";
 
-  if(id==="study") study();
-  if(id==="write") write();
-  if(id==="analyze") analyze();
-  if(id==="worksheet") worksheet();
+  if (id === "study") renderStudy();
+  if (id === "write") renderWrite();
+  if (id === "analyze") renderAnalyze();
+  if (id === "worksheet") renderWorksheet();
 }
 
-
-
-/* STUDY */
-function study() {
+/* =========================
+   STUDY MODE: per-tense tables
+========================= */
+function renderStudy(){
   const tenses = [
-    { label: "Praesens Aktiv", tempus: "praesens", modus: "indikativ", genus: "aktiv" },
-    { label: "Imperfekt Aktiv", tempus: "imperfekt", modus: "indikativ", genus: "aktiv" },
-    { label: "Futur I Aktiv", tempus: "futur1", modus: "indikativ", genus: "aktiv" },
-    { label: "Perfekt Aktiv", tempus: "perfekt", modus: "indikativ", genus: "aktiv" },
-    { label: "Plusquamperfekt Aktiv", tempus: "plusquamperfekt", modus: "indikativ", genus: "aktiv" },
-    { label: "Futur II Aktiv", tempus: "futur2", modus: "indikativ", genus: "aktiv" },
-
-    { label: "Praesens Passiv", tempus: "praesens", modus: "indikativ", genus: "passiv" },
-    { label: "Imperfekt Passiv", tempus: "imperfekt", modus: "indikativ", genus: "passiv" },
-
-    { label: "Konjunktiv Praesens", tempus: "praesens", modus: "konjunktiv", genus: "aktiv" },
-    { label: "Konjunktiv Imperfekt", tempus: "imperfekt", modus: "konjunktiv", genus: "aktiv" }
+    { label: "Praesens Aktiv",        modus:"indikativ", tempus:"praesens",        genus:"aktiv" },
+    { label: "Imperfekt Aktiv",       modus:"indikativ", tempus:"imperfekt",       genus:"aktiv" },
+    { label: "Futur I Aktiv",         modus:"indikativ", tempus:"futur1",          genus:"aktiv" },
+    { label: "Perfekt Aktiv",         modus:"indikativ", tempus:"perfekt",         genus:"aktiv" },
+    { label: "Plusquamperfekt Aktiv", modus:"indikativ", tempus:"plusquamperfekt", genus:"aktiv" },
+    { label: "Futur II Aktiv",        modus:"indikativ", tempus:"futur2",          genus:"aktiv" },
+    { label: "Praesens Passiv",       modus:"indikativ", tempus:"praesens",        genus:"passiv" },
+    { label: "Imperfekt Passiv",      modus:"indikativ", tempus:"imperfekt",       genus:"passiv" },
+    { label: "Konjunktiv Praesens",   modus:"konjunktiv",tempus:"praesens",        genus:"aktiv" },
+    { label: "Konjunktiv Imperfekt",  modus:"konjunktiv",tempus:"imperfekt",       genus:"aktiv" }
   ];
 
-  let html = "<h2>Lernmodus – nach Tempus</h2>";
+  let html = `<h2>Lernmodus – Tabellen nach Tempus</h2>
+              <div class="muted">„—“ bedeutet: in dieser App (noch) nicht abgedeckt oder schulisch selten als einfache Endungstabelle.</div>`;
 
-  for (const v in VERBS) {
+  for (const v of Object.keys(VERBS)) {
     html += `<h3>${v}</h3>`;
-
     for (const t of tenses) {
       html += `<h4>${t.label}</h4>`;
-      html += "<table><tr>";
-
-      PERSONS.forEach(p => {
-        html += `<th>${p.l}</th>`;
-      });
-
-      html += "</tr><tr>";
-
-      PERSONS.forEach(p => {
-        const form = conj({
-          v,
-          modus: t.modus,
-          tempus: t.tempus,
-          genus: t.genus,
-          p: p.p,
-          n: p.n
-        });
-        html += `<td>${form}</td>`;
-      });
-
-      html += "</tr></table><br>";
+      html += `<table><tr>${PERSONS.map(p=>`<th>${p.l}</th>`).join("")}</tr><tr>`;
+      html += PERSONS.map(p=>{
+        const f = conj({ v, modus:t.modus, tempus:t.tempus, genus:t.genus, p:p.p, n:p.n });
+        return `<td>${f}</td>`;
+      }).join("");
+      html += `</tr></table>`;
     }
   }
 
   document.getElementById("study").innerHTML = html;
-
 }
 
-/* WRITE */
-let current=null;
-function write(){
-  resetProgress();
-  const container = document.getElementById("write");
-
-  container.innerHTML = `
+/* =========================
+   WRITE MODE: per-mode difficulty
+========================= */
+let writeAnswer = "";
+function renderWrite(){
+  const el = document.getElementById("write");
+  el.innerHTML = `
     <h2>Schreibmodus</h2>
-    <label>
-      Schwierigkeit:
-      <select id="writeDiff">
-        <option value="easy">Leicht</option>
-        <option value="medium">Mittel</option>
-        <option value="hard">Schwer</option>
-      </select>
-    </label>
-    <div id="writeTask"></div>
+    <div class="row">
+      <label>Schwierigkeit:
+        <select id="writeDiff">
+          <option value="easy">Leicht</option>
+          <option value="medium">Mittel</option>
+          <option value="hard">Schwer</option>
+        </select>
+      </label>
+      <button id="writeNew">Neue Aufgabe</button>
+    </div>
+    <div id="writeTask" class="card"></div>
   `;
 
-  generateWriteTask();
-
+  document.getElementById("writeNew").onclick = newWriteTask;
+  newWriteTask();
 }
 
-let currentAnswer = "";
-
-function generateWriteTask(){
+function newWriteTask(){
   const level = document.getElementById("writeDiff").value;
-  const d = DIFFICULTY[level];
+  const cfg = DIFFICULTY[level];
 
-  const v = d.verbs[Math.random() * d.verbs.length | 0];
-  const tempus = d.t[Math.random() * d.t.length | 0];
-  const modus = d.m[Math.random() * d.m.length | 0];
-  const genus = d.g[Math.random() * d.g.length | 0];
-  const p = PERSONS[Math.random() * 6 | 0];
+  const v = rand(cfg.verbs);
+  const modus = rand(cfg.modi);
+  const tempus = rand(cfg.tenses);
+  const genus = rand(cfg.voices);
+  const pers = rand(PERSONS);
 
-  currentAnswer = conj({
-    v, modus, tempus, genus,
-    p: p.p, n: p.n
-  });
+  writeAnswer = conj({ v, modus, tempus, genus, p: pers.p, n: pers.n });
 
   document.getElementById("writeTask").innerHTML = `
-    <p>
-      <b>${v}</b> – ${modus} – ${tempus} – ${genus} – ${p.l}
-    </p>
-    <input id="userAnswer">
-    <button id="checkBtn">Prüfen</button>
-    <button id="nextBtn">Neu</button>
-    <p id="feedback"></p>
+    <div><b>Aufgabe:</b> Bilde die Form.</div>
+    <div style="margin:6px 0;">
+      <b>${v}</b> – ${LABELS.modus[modus] || modus} – ${LABELS.tempus[tempus] || tempus} – ${LABELS.genus[genus] || genus} – ${pers.l}
+    </div>
+    <input id="writeInput" placeholder="Form eingeben">
+    <button id="writeCheck">Prüfen</button>
+    <div id="writeFeedback" style="margin-top:6px;"></div>
   `;
 
-  document.getElementById("checkBtn").onclick = () => {
-    const user = document.getElementById("userAnswer").value.trim();
-    const ok = user === currentAnswer;
-    record(ok);
-    document.getElementById("feedback").innerHTML =
+  document.getElementById("writeCheck").onclick = () => {
+    const user = (document.getElementById("writeInput").value || "").trim();
+    const ok = user === writeAnswer;
+    document.getElementById("writeFeedback").innerHTML =
       ok
         ? `<span class="correct">✔️ Richtig</span>`
-        : `<span class="wrong">❌ ${currentAnswer}</span>`;
+        : `<span class="wrong">❌ Falsch</span> – Lösung: <b>${writeAnswer}</b>`;
   };
-
-  document.getElementById("nextBtn").onclick = generateWriteTask; }
-
-  
-function newWriteTask(){
-  const level=document.getElementById("writeDiff").value;
-  const d=DIFFICULTY[level];
-  const v=d.verbs[Math.random()*d.verbs.length|0];
-  const tempus=d.t[Math.random()*d.t.length|0];
-  const modus=d.m[Math.random()*d.m.length|0];
-  const genus=d.g[Math.random()*d.g.length|0];
-  const p=PERSONS[Math.random()*6|0];
-  current=conj({v,modus,tempus,genus,p:p.p,n:p.n});
-
-  document.getElementById("writeTask").innerHTML = `
-    <p><b>${v}</b> – ${modus} – ${tempus} – ${genus} – ${p.l}</p>
-    <input id="ans">
-    <button onclick="check()">Prüfen</button>
-    <button onclick="newWriteTask()">Neu</button>
-    <p id="fb"></p>
-  `;
 }
 
-/* ANALYZE */
-let solution=null;
-function analyze(){
-  resetProgress();
-  const container = document.getElementById("analyze");
+/* =========================
+   ANALYZE MODE: per-mode difficulty
+   user selects verb/modus/tempus/genus/person
+========================= */
+let analyzeSolution = null;
 
-  container.innerHTML = `
+function renderAnalyze(){
+  const el = document.getElementById("analyze");
+  el.innerHTML = `
     <h2>Analysemodus</h2>
-    <label>
-      Schwierigkeit:
-      <select id="anDiff">
-        <option value="easy">Leicht</option>
-        <option value="medium">Mittel</option>
-        <option value="hard">Schwer</option>
-      </select>
-    </label>
-    <div id="anTask"></div>
+    <div class="row">
+      <label>Schwierigkeit:
+        <select id="anDiff">
+          <option value="easy">Leicht</option>
+          <option value="medium">Mittel</option>
+          <option value="hard">Schwer</option>
+        </select>
+      </label>
+      <button id="anNew">Neue Form</button>
+    </div>
+
+    <div id="anTask" class="card"></div>
+
+    <div class="card">
+      <div><b>Bestimme:</b></div>
+      <div class="row">
+        <label>Verb:
+          <select id="anVerb"></select>
+        </label>
+        <label>Modus:
+          <select id="anModus">
+            <option value="indikativ">Indikativ</option>
+            <option value="konjunktiv">Konjunktiv</option>
+          </select>
+        </label>
+        <label>Tempus:
+          <select id="anTempus">
+            <option value="praesens">Praesens</option>
+            <option value="imperfekt">Imperfekt</option>
+            <option value="futur1">Futur I</option>
+            <option value="perfekt">Perfekt</option>
+            <option value="plusquamperfekt">Plusquamperfekt</option>
+            <option value="futur2">Futur II</option>
+          </select>
+        </label>
+        <label>Genus:
+          <select id="anGenus">
+            <option value="aktiv">Aktiv</option>
+            <option value="passiv">Passiv</option>
+          </select>
+        </label>
+        <label>Person:
+          <select id="anPerson"></select>
+        </label>
+      </div>
+      <button id="anCheck">Prüfen</button>
+      <div id="anFeedback" style="margin-top:6px;"></div>
+    </div>
   `;
 
-  generateAnalyzeTask();
+  // fill person dropdown
+  document.getElementById("anPerson").innerHTML =
+    PERSONS.map(x => `<option value="${x.p}|${x.n}">${x.l}</option>`).join("");
+
+  document.getElementById("anNew").onclick = newAnalyzeTask;
+  document.getElementById("anCheck").onclick = checkAnalyze;
+
+  newAnalyzeTask();
 }
 
-function generateAnalyzeTask(){
-  const level = document.getElementById("anDiff").value;
-  const d = DIFFICULTY[level];
+function fillAnalyzeVerbOptions(allowedVerbs){
+  const sel = document.getElementById("anVerb");
+  sel.innerHTML = allowedVerbs.map(v => `<option value="${v}">${v}</option>`).join("");
+}
 
-  const v = d.verbs[Math.random() * d.verbs.length | 0];
-  const tempus = d.t[Math.random() * d.t.length | 0];
-  const modus = d.m[Math.random() * d.m.length | 0];
-  const genus = d.g[Math.random() * d.g.length | 0];
-  const p = PERSONS[Math.random() * 6 | 0];
-
-  const form = conj({
-    v, modus, tempus, genus,
-    p: p.p, n: p.n
-  });
-
-  const solution = `${v} – ${modus} – ${tempus} – ${genus} – ${p.l}`;
-
-  document.getElementById("anTask").innerHTML = `
-    <p><b>${form}</b></p>
-    <button id="showSolution">Lösung anzeigen</button>
-    <button id="nextAnalyze">Neu</button>
-  `;
-
-  document.getElementById("showSolution").onclick = () => {
-    alert(solution);
-  };
-
-  document.getElementById("nextAnalyze").onclick = generateAnalyzeTask; }
-
-  
 function newAnalyzeTask(){
-  const level=document.getElementById("anDiff").value;
-  const d=DIFFICULTY[level];
-  const v=d.verbs[Math.random()*d.verbs.length|0];
-  const tempus=d.t[Math.random()*d.t.length|0];
-  const modus=d.m[Math.random()*d.m.length|0];
-  const genus=d.g[Math.random()*d.g.length|0];
-  const p=PERSONS[Math.random()*6|0];
-  const form=conj({v,modus,tempus,genus,p:p.p,n:p.n});
-  solution=`${v} – ${modus} – ${tempus} – ${genus} – ${p.l}`;
+  const level = document.getElementById("anDiff").value;
+  const cfg = DIFFICULTY[level];
+
+  fillAnalyzeVerbOptions(cfg.verbs);
+
+  const v = rand(cfg.verbs);
+  const modus = rand(cfg.modi);
+  const tempus = rand(cfg.tenses);
+  const genus = rand(cfg.voices);
+  const pers = rand(PERSONS);
+
+  const form = conj({ v, modus, tempus, genus, p: pers.p, n: pers.n });
+
+  analyzeSolution = { v, modus, tempus, genus, p: pers.p, n: pers.n, form };
 
   document.getElementById("anTask").innerHTML = `
-    <p><b>${form}</b></p>
-    <p>Was ist die Form?</p>
-    <button onclick="alert(solution)">Lösung anzeigen</button>
-    <button onclick="newAnalyzeTask()">Neu</button>
+    <div><b>Form:</b> <span style="font-size:1.2em;">${form}</span></div>
+    <div class="muted">Wähle unten die richtige Bestimmung.</div>
   `;
+
+  // preselect something neutral (not the solution)
+  document.getElementById("anVerb").value = cfg.verbs[0];
+  document.getElementById("anModus").value = "indikativ";
+  document.getElementById("anTempus").value = "praesens";
+  document.getElementById("anGenus").value = "aktiv";
+  document.getElementById("anPerson").value = "1|sg";
+
+  document.getElementById("anFeedback").innerHTML = "";
 }
 
-/* WORKSHEET */
-function worksheet(){
-  resetProgress();
+function checkAnalyze(){
+  if (!analyzeSolution) return;
 
-  const container = document.getElementById("worksheet");
+  const v = document.getElementById("anVerb").value;
+  const modus = document.getElementById("anModus").value;
+  const tempus = document.getElementById("anTempus").value;
+  const genus = document.getElementById("anGenus").value;
+  const [pStr, n] = document.getElementById("anPerson").value.split("|");
+  const p = parseInt(pStr, 10);
 
-  container.innerHTML = `
+  const ok =
+    v === analyzeSolution.v &&
+    modus === analyzeSolution.modus &&
+    tempus === analyzeSolution.tempus &&
+    genus === analyzeSolution.genus &&
+    p === analyzeSolution.p &&
+    n === analyzeSolution.n;
+
+  document.getElementById("anFeedback").innerHTML = ok
+    ? `<span class="correct">✔️ Richtig</span>`
+    : `<span class="wrong">❌ Falsch</span><br>
+       Lösung: <b>${analyzeSolution.v}</b> – ${LABELS.modus[analyzeSolution.modus] || analyzeSolution.modus} –
+       ${LABELS.tempus[analyzeSolution.tempus] || analyzeSolution.tempus} – ${LABELS.genus[analyzeSolution.genus] || analyzeSolution.genus} –
+       ${PERSONS[pIndex(analyzeSolution.p, analyzeSolution.n)]?.l || ""}`;
+}
+
+/* =========================
+   WORKSHEET MODE
+========================= */
+function renderWorksheet(){
+  const el = document.getElementById("worksheet");
+  el.innerHTML = `
     <h2>Arbeitsblatt</h2>
 
-    <label>
-      Schwierigkeit:
-      <select id="wsDiff">
-        <option value="easy">Leicht</option>
-        <option value="medium">Mittel</option>
-        <option value="hard">Schwer</option>
-      </select>
-    </label>
+    <div class="row">
+      <label>Schwierigkeit:
+        <select id="wsDiff">
+          <option value="easy">Leicht</option>
+          <option value="medium">Mittel</option>
+          <option value="hard">Schwer</option>
+        </select>
+      </label>
 
-    <br><br>
+      <label>Aufgabentyp:
+        <select id="wsType">
+          <option value="write">Konjugieren (Form schreiben)</option>
+          <option value="analyze">Bestimmen (Parameter nennen)</option>
+          <option value="mixed">Gemischt</option>
+        </select>
+      </label>
 
-    <button id="genBtn">Arbeitsblatt erzeugen</button>
+      <label>Anzahl:
+        <input id="wsCount" type="number" min="5" max="50" value="10" style="width:90px;">
+      </label>
 
-    <div id="wsOutput" style="margin-top:10px;"></div>
+      <label>
+        <input id="wsSolutions" type="checkbox" checked>
+        Lösungen anzeigen
+      </label>
+
+      <button id="wsGen">Erzeugen</button>
+    </div>
+
+    <div id="wsOutput" class="card"></div>
   `;
 
-  document.getElementById("genBtn").onclick = genWS; 
+  document.getElementById("wsGen").onclick = generateWorksheet;
+  document.getElementById("wsOutput").innerHTML =
+    `<div class="muted">Tipp: Nach dem Erzeugen kannst du über den Browser drucken oder als PDF speichern.</div>`;
 }
 
-  function genWS(){
+function generateWorksheet(){
   const level = document.getElementById("wsDiff").value;
-  const d = DIFFICULTY[level];
-  const out = [];
+  const cfg = DIFFICULTY[level];
+  const type = document.getElementById("wsType").value;
+  const count = Math.max(5, Math.min(50, parseInt(document.getElementById("wsCount").value || "10", 10)));
+  const showSolutions = document.getElementById("wsSolutions").checked;
 
-  for(let i=0;i<10;i++){
-    const v = d.verbs[Math.random() * d.verbs.length | 0];
-    const tempus = d.t[Math.random() * d.t.length | 0];
-    const modus = d.m[Math.random() * d.m.length | 0];
-    const genus = d.g[Math.random() * d.g.length | 0];
-    const p = PERSONS[Math.random() * 6 | 0];
+  const tasks = [];
+  const sols = [];
 
-    out.push(
-      `<li>
-        ${v} – ${modus} – ${tempus} – ${genus} – ${p.l}: ________
-      </li>`
-    );
+  for (let i = 1; i <= count; i++) {
+    const v = rand(cfg.verbs);
+    const modus = rand(cfg.modi);
+    const tempus = rand(cfg.tenses);
+    const genus = rand(cfg.voices);
+    const pers = rand(PERSONS);
+
+    const form = conj({ v, modus, tempus, genus, p: pers.p, n: pers.n });
+
+    const pick = (type === "mixed") ? (Math.random() < 0.5 ? "write" : "analyze") : type;
+
+    if (pick === "write") {
+      tasks.push(`${i}. <b>${v}</b> – ${LABELS.modus[modus] || modus} – ${LABELS.tempus[tempus] || tempus} – ${LABELS.genus[genus] || genus} – ${pers.l}: ________`);
+      sols.push(`${i}. ${form}`);
+    } else {
+      tasks.push(`${i}. Bestimme: <b>${form}</b>`);
+      sols.push(`${i}. ${v} – ${LABELS.modus[modus] || modus} – ${LABELS.tempus[tempus] || tempus} – ${LABELS.genus[genus] || genus} – ${pers.l}`);
+    }
   }
 
-  document.getElementById("wsOutput").innerHTML = `
-    <ol>
-      ${out.join("")}
-    </ol>
-    <button onclick="window.print()">🖨️ Drucken</button>
+  const output = `
+    <h3>Arbeitsblatt – Lateinische Verben</h3>
+    <ol>${tasks.map(t => `<li>${t}</li>`).join("")}</ol>
+    ${showSolutions ? `<hr><h3>Lösungen</h3><ol>${sols.map(s => `<li>${s}</li>`).join("")}</ol>` : ""}
+    <button onclick="window.print()">🖨️ Drucken / PDF</button>
   `;
+
+  document.getElementById("wsOutput").innerHTML = output;
 }
 
-
-}
-
-/* INIT */
-renderStats();
+/* =========================
+   INIT
+========================= */
 show("study");
 </script>
 </body>
