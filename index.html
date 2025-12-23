@@ -378,24 +378,58 @@ function newAnalyzeTask(){
 /* WORKSHEET */
 function worksheet(){
   resetProgress();
-  document.getElementById("worksheet").innerHTML = `
+
+  const container = document.getElementById("worksheet");
+
+  container.innerHTML = `
     <h2>Arbeitsblatt</h2>
-    <label>Schwierigkeit:
+
+    <label>
+      Schwierigkeit:
       <select id="wsDiff">
         <option value="easy">Leicht</option>
         <option value="medium">Mittel</option>
         <option value="hard">Schwer</option>
       </select>
     </label>
-    <button onclick="genWS()">Erzeugen</button>
-    <div id="ws"></div>
+
+    <br><br>
+
+    <button id="genBtn">Arbeitsblatt erzeugen</button>
+
+    <div id="wsOutput" style="margin-top:10px;"></div>
   `;
-  
-function resetProgress(){
-  const p = { t: 0, c: 0, s: 0 };
-  saveP(p);
-  renderStats();
+
+  document.getElementById("genBtn").onclick = genWS; 
 }
+
+  function genWS(){
+  const level = document.getElementById("wsDiff").value;
+  const d = DIFFICULTY[level];
+  const out = [];
+
+  for(let i=0;i<10;i++){
+    const v = d.verbs[Math.random() * d.verbs.length | 0];
+    const tempus = d.t[Math.random() * d.t.length | 0];
+    const modus = d.m[Math.random() * d.m.length | 0];
+    const genus = d.g[Math.random() * d.g.length | 0];
+    const p = PERSONS[Math.random() * 6 | 0];
+
+    out.push(
+      `<li>
+        ${v} – ${modus} – ${tempus} – ${genus} – ${p.l}: ________
+      </li>`
+    );
+  }
+
+  document.getElementById("wsOutput").innerHTML = `
+    <ol>
+      ${out.join("")}
+    </ol>
+    <button onclick="window.print()">🖨️ Drucken</button>
+  `;
+}
+
 
 }
 
