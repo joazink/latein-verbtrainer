@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Lateinischer Verbtrainer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="theme-color" content="#2c3e50">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  padding: 10px;
+  margin: 0;
+}
+
+h1 { text-align: center; font-size: 1.4em; }
+
+nav {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+button, select, input {
+  padding: 8px;
+  margin: 4px;
+  font-size: 1em;
+}
+
+section {
+  display: none;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9em;
+}
+
+th, td {
+  border: 1px solid #999;
+  padding: 4px;
+  text-align: center;
+}
+
+.correct { color: green; }
+.wrong { color: red; }
+
+#stats {
+  background: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Lateinischer Verbtrainer</h1>
+
+<nav>
+  <select id="difficulty">
+    <option value="easy">Leicht</option>
+    <option value="medium">Mittel</option>
+    <option value="hard">Schwer</option>
+  </select>
+  <br>
+  <button onclick="show('study')">📘 Lernen</button>
+  <button onclick="show('write')">✍️ Schreiben</button>
+  <button onclick="show('analyze')">🔍 Analysieren</button>
+  <button onclick="show('worksheet')">📝 Arbeitsblatt</button>
+</nav>
+
+<div id="stats"></div>
+
+<section id="study"></section>
+<section id="write"></section>
+<section id="analyze"></section>
+<section id="worksheet"></section>
+
+<script>
+/* ================= LATIN ENGINE ================= */
+
+const PERSONS = [
+ {p:1,n:"sg",l:"1. Sg."},{p:2,n:"sg",l:"2. Sg."},{p:3,n:"sg",l:"3. Sg."},
+ {p:1,n:"pl",l:"1. Pl."},{p:2,n:"pl",l:"2. Pl."},{p:3,n:"pl",l:"3. Pl."}
+];
+
+const END = {
+ presA:["o","s","t","mus","tis","nt"],
+ impfA:["bam","bas","bat","bamus","batis","bant"],
+ perfA:["i","isti","it","imus","istis","erunt"],
+ plqA:["eram","eras","erat","eramus","eratis","erant"]
+};
+
+const FUT = {
+ 1:["bo","bis","bit","bimus","bitis","bunt"],
+ 2:["bo","bis","bit","bimus","bitis","bunt"],
+ 3:["am","es","et","emus","etis","ent"],
+ "3io":["iam","ies","iet","iemus","ietis","ient"],
+ 4:["iam","ies","iet","iemus","ietis","ient"]
+};
+
+const VERBS = {
+ amare:{c:1,p:"ama",pf:"amav"},
+ monere:{c:2,p:"mone",pf:"monu"},
+ legere:{c:3,p:"lege",pf:"leg"},
+ capere:{c:"3io",p:"cape",pf:"cep"},
+ audire:{c:4,p:"audi",pf:"audiv"},
+ esse:{irr:true,
+  pres:["sum","es","est","sumus","estis","sunt"],
+  impf:["eram","eras","erat","eramus","eratis","erant"],
+  fut:["ero","eris","erit","erimus","eritis","erunt"],
+  perf:["fui","fuisti","fuit","fuimus","fuistis","fuerunt"]
+ }
+};
+
+function idx(p,n){return PERSONS.findIndex(x=>x.p===p&&x.n===n)}
+
+function conj(v,t,p,n){
+ const i=idx(p,n),V=VERBS[v];
+ if(V.irr){
+  if(t==="praesens")return V.pres[i];
+  if(t==="imperfekt")return V.impf[i];
+  if(t==="futur1")return V.fut[i];
+  if(t==="perfekt")return V.perf[i];
+ }
+ if(t==="praesens")return V.p+END.presA[i];
+ if(t==="imperfekt")return V.p+END.impfA[i];
+ if(t==="futur1")return V.p+FUT[V.c][i];
+ if(t==="perfekt")return V.pf+END.perfA[i];
+ if(t==="plusquamperfekt")return V.pf+END.plqA[i];
+}
+
+/* ================= DIFFICULTY ================= */
+
+const DIFFICULTY = {
+ easy:{verbs:["amare","monere","audire"],t:["praesens","imperfekt"]},
+ medium:{verbs:["amare","monere","legere","capere","audire","esse"],t:["praesens","imperfekt","futur1","perfekt"]},
+ hard:{verbs:Object.keys(VERBS),t:["praesens","imperfekt","futur1","perfekt","plusquamperfekt"]}
+};
+
+function diff(){return document.getElementById("difficulty").value}
+
+/* ================= PROGRESS ================= */
+
+const DEF={total:0,correct:0,streak:0};
+
+function loadP(){return JSON.parse(localStorage.getItem("latinP"))||{...DEF}}
+function saveP(p){localStorage.setItem("latinP",JSON.stringify(p))}
+
+function record(ok){
+ const p=loadP();
+ p.total++; if(ok)p.correct++; p.streak=ok?p.streak+1:0;
+ saveP(p); renderStats();
+}
+
+function renderStats(){
+ const p=loadP();
+ document.getElementById("stats").innerHTML=
+ `📊 ${p.correct}/${p.total} richtig (${p.total?Math.round(p.correct/p.total*100):0}%) – Serie: ${p.streak}`;
+}
+
+/* ================= UI ================= */
+
+function show(id){
+ document.querySelectorAll("section").forEach(s=>s.style.display="none");
+ document.getElementById(id).style.display="block";
+ if(id==="study")study();
+ if(id==="write")write();
+ if(id==="analyze")analyze();
+ if(id==="worksheet")worksheet();
+}
+
+/* ----- STUDY ----- */
+function study(){
+ let h="<h2>Lernmodus</h2>";
+ for(const v of Object.keys(VERBS)){
+  h+=`<h3>${v}</h3><table><tr>`;
+  PERSONS.forEach(p=>h+=`<th>${p.l}</th>`); h+="</tr><tr>";
+  PERSONS.forEach(p=>h+=`<td>${conj(v,"praesens",p.p,p.n)}</td>`);
+  h+="</tr></table>";
+ }
+ document.getElementById("study").innerHTML=h;
+}
+
+/* ----- WRITE ----- */
+let cur=null;
+function write(){
+ const d=DIFFICULTY[diff()];
+ const v=d.verbs[Math.floor(Math.random()*d.verbs.length)];
+ const t=d.t[Math.floor(Math.random()*d.t.length)];
+ const p=PERSONS[Math.floor(Math.random()*6)];
+ cur=conj(v,t,p.p,p.n);
+ document.getElementById("write").innerHTML=
+ `<h2>Schreibmodus</h2>
+ <p>${v} – ${t} – ${p.l}</p>
+ <input id="ans"><button onclick="check()">Prüfen</button>
+ <p id="fb"></p>`;
+}
+function check(){
+ const ok=document.getElementById("ans").value.trim()===cur;
+ record(ok);
+ document.getElementById("fb").innerHTML=ok?"<span class='correct'>✔️ Richtig</span>":"<span class='wrong'>❌ "+cur+"</span>";
+}
+
+/* ----- ANALYZE ----- */
+let sol=null;
+function analyze(){
+ const v="legere";
+ const p=PERSONS[Math.floor(Math.random()*6)];
+ sol=p.l;
+ const f=conj(v,"perfekt",p.p,p.n);
+ document.getElementById("analyze").innerHTML=
+ `<h2>Analyse</h2><p><b>${f}</b></p>
+ <select id="g">${PERSONS.map(x=>`<option>${x.l}</option>`).join("")}</select>
+ <button onclick="chk()">Prüfen</button><p id="af"></p>`;
+}
+function chk(){
+ const ok=document.getElementById("g").value===sol;
+ record(ok);
+ document.getElementById("af").innerHTML=ok?"<span class='correct'>✔️</span>":"<span class='wrong'>❌</span>";
+}
+
+/* ----- WORKSHEET ----- */
+function worksheet(){
+ document.getElementById("worksheet").innerHTML=
+ `<h2>Arbeitsblatt</h2>
+ <button onclick="genWS()">Erzeugen</button>
+ <div id="ws"></div>`;
+}
+function genWS(){
+ let out="<ol>";
+ for(let i=0;i<10;i++){
+  const v="amare";
+  const p=PERSONS[Math.floor(Math.random()*6)];
+  out+=`<li>${v} (${p.l} Präsens): _______</li>`;
+ }
+ out+="</ol><button onclick='window.print()'>🖨️ Drucken</button>";
+ document.getElementById("ws").innerHTML=out;
+}
+
+/* INIT */
+renderStats();
+show("study");
+
+/* PWA register (works when hosted) */
+if("serviceWorker" in navigator){
+ navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
