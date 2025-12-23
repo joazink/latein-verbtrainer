@@ -39,6 +39,14 @@ th,td { border:1px solid #999; padding:4px; text-align:center; }
 <section id="worksheet"></section>
 
 <script>
+
+function resetProgress(){
+  const p = { t: 0, c: 0, s: 0 };
+  saveP(p);
+  renderStats();
+}
+
+  
 /* ================= PERSONS ================= */
 const PERSONS=[
 {p:1,n:"sg",l:"1. Sg."},{p:2,n:"sg",l:"2. Sg."},{p:3,n:"sg",l:"3. Sg."},
@@ -151,13 +159,19 @@ document.getElementById("stats").innerHTML=
 
 /* ================= UI ================= */
 function show(id){
-document.querySelectorAll("section").forEach(s=>s.style.display="none");
-document.getElementById(id).style.display="block";
-if(id==="study")study();
-if(id==="write")write();
-if(id==="analyze")analyze();
-if(id==="worksheet")worksheet();
+  document.querySelectorAll("section").forEach(s=>s.style.display="none");
+  document.getElementById(id).style.display="block";
+
+  if(id !== "study"){
+    resetProgress();
+  }
+
+  if(id==="study") study();
+  if(id==="write") write();
+  if(id==="analyze") analyze();
+  if(id==="worksheet") worksheet();
 }
+
 
 /* STUDY */
 function study() {
