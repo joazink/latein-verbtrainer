@@ -162,15 +162,12 @@ function show(id){
   document.querySelectorAll("section").forEach(s=>s.style.display="none");
   document.getElementById(id).style.display="block";
 
-  if(id !== "study"){
-    resetProgress();
-  }
-
   if(id==="study") study();
   if(id==="write") write();
   if(id==="analyze") analyze();
   if(id==="worksheet") worksheet();
 }
+
 
 
 /* STUDY */
@@ -228,6 +225,7 @@ function study() {
 /* WRITE */
 let current=null;
 function write(){
+  resetProgress();
   const container = document.getElementById("write");
 
   container.innerHTML = `
@@ -309,6 +307,7 @@ function newWriteTask(){
 /* ANALYZE */
 let solution=null;
 function analyze(){
+  resetProgress();
   const container = document.getElementById("analyze");
 
   container.innerHTML = `
@@ -378,6 +377,7 @@ function newAnalyzeTask(){
 
 /* WORKSHEET */
 function worksheet(){
+  resetProgress();
   document.getElementById("worksheet").innerHTML = `
     <h2>Arbeitsblatt</h2>
     <label>Schwierigkeit:
@@ -390,6 +390,12 @@ function worksheet(){
     <button onclick="genWS()">Erzeugen</button>
     <div id="ws"></div>
   `;
+  
+function resetProgress(){
+  const p = { t: 0, c: 0, s: 0 };
+  saveP(p);
+  renderStats();
+}
 
 }
 
