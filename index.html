@@ -181,8 +181,14 @@ function conj({ v, modus, tempus, genus, p, n }) {
   }
 
   // Regular verbs: Indikativ
-  if (genus === "aktiv") {
-    if (tempus === "praesens") return V.p + END.presA[i];
+if (genus === "aktiv") {
+  if (tempus === "praesens") {
+    // Fix for 3rd conjugation 1st sg: lego, capio, etc.
+    if (i === 0 && (V.c === 3 || V.c === "3io")) {
+      return V.p.slice(0, -1) + "o";
+    }
+    return V.p + END.presA[i];
+  }
     if (tempus === "imperfekt") return V.p + END.impfA[i];
     if (tempus === "futur1") return V.p + FUT[V.c][i];
     if (tempus === "perfekt") return V.pf + END.perfA[i];
