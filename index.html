@@ -184,9 +184,15 @@ function conj({ v, modus, tempus, genus, p, n }) {
 if (genus === "aktiv") {
   if (tempus === "praesens") {
     // Fix for 3rd conjugation 1st sg: lego, capio, etc.
-    if (i === 0 && (V.c === 3 || V.c === "3io")) {
-      return V.p.slice(0, -1) + "o";
-    }
+if (i === 0 && V.c === 3) {
+  // 3rd conjugation: lego
+  return V.p.slice(0, -1) + "o";
+}
+
+if (i === 0 && V.c === "3io") {
+  // 3rd-io conjugation: capio
+  return V.p.slice(0, -1) + "io";
+}
     return V.p + END.presA[i];
   }
     if (tempus === "imperfekt") return V.p + END.impfA[i];
